@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スケジュールメモ</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2196F3">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- タブナビゲーション -->
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="calendar">📅 カレンダー</button>
+      <button class="tab-btn" data-tab="today">📝 今日</button>
+      <button class="tab-btn" data-tab="handwriting">✏️ 手書き</button>
+    </nav>
+
+    <!-- カレンダー画面 -->
+    <div id="calendar-view" class="view active">
+      <div class="month-header">
+        <button id="prev-month" class="nav-btn">◀</button>
+        <h2 id="month-title"></h2>
+        <button id="next-month" class="nav-btn">▶</button>
+      </div>
+      <!-- 年月ジャンプ選択 -->
+      <div class="year-month-picker">
+        <select id="year-select" class="picker-select"></select>
+        <select id="month-select" class="picker-select">
+          <option value="1">1月</option>
+          <option value="2">2月</option>
+          <option value="3">3月</option>
+          <option value="4">4月</option>
+          <option value="5">5月</option>
+          <option value="6">6月</option>
+          <option value="7">7月</option>
+          <option value="8">8月</option>
+          <option value="9">9月</option>
+          <option value="10">10月</option>
+          <option value="11">11月</option>
+          <option value="12">12月</option>
+        </select>
+        <button id="jump-btn" class="jump-btn">移動</button>
+        <button id="today-jump-btn" class="today-jump-btn">今月</button>
+      </div>
+      <div class="weekday-row">
+        <span class="weekday sun">日</span>
+        <span class="weekday">月</span>
+        <span class="weekday">火</span>
+        <span class="weekday">水</span>
+        <span class="weekday">木</span>
+        <span class="weekday">金</span>
+        <span class="weekday sat">土</span>
+      </div>
+      <div id="calendar-grid" class="calendar-grid"></div>
+    </div>
+
+    <!-- 今日の画面 -->
+    <div id="today-view" class="view">
+    </div>
+
+    <!-- 手書きメモ専用画面 -->
+    <div id="handwriting-view" class="view">
+      <div class="handwriting-view-header">
+        <h2>✏️ 手書きメモ</h2>
+        <p>日付を選んで手書きで素早く保存できます</p>
+      </div>
+      <div class="hw-date-picker">
+        <label>保存先の日付：</label>
+        <input type="date" id="hw-date-input">
+      </div>
+      <div class="handwriting-canvas-area">
+        <div class="canvas-toolbar" id="hw-toolbar">
+          <div class="color-picker" id="hw-color-picker"></div>
+          <div class="width-picker" id="hw-width-picker"></div>
+          <div class="canvas-actions">
+            <button id="hw-undo-btn" class="tool-btn">↩ 戻す</button>
+            <button id="hw-clear-btn" class="tool-btn">🗑 クリア</button>
+            <button id="hw-save-btn" class="tool-btn save-tool-btn">💾 保存</button>
+          </div>
+        </div>
+        <canvas id="hw-drawing-canvas"></canvas>
+      </div>
+      <div id="hw-saved-list" class="hw-saved-list"></div>
+    </div>
+
+    <!-- 日別スケジュール画面 (モーダル) -->
+    <div id="daily-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="daily-date-title"></h2>
+          <button id="close-daily" class="close-btn">✕</button>
+        </div>
+        <div id="daily-schedule-list" class="schedule-list"></div>
+        <button id="add-schedule-btn" class="add-btn">＋ 新しい予定を追加</button>
+      </div>
+    </div>
+
+    <!-- メモ入力画面 (モーダル) -->
+    <div id="memo-modal" class="modal hidden">
+      <div class="modal-content memo-modal-content">
+        <div class="modal-header">
+          <h2 id="memo-modal-title">予定の追加</h2>
+          <button id="close-memo" class="close-btn">✕</button>
+        </div>
+        <div class="memo-form">
+          <label>時間（任意）</label>
+          <div class="time-picker-row">
+            <select id="memo-time-start" class="time-select">
+              <option value="">開始時間</option>
+            </select>
+            <span class="time-separator">〜</span>
+            <select id="memo-time-end" class="time-select">
+              <option value="">終了時間</option>
+            </select>
+          </div>
+
+          <label>タイトル <span class="required">*</span></label>
+          <input type="text" id="memo-title" placeholder="予定のタイトルを入力" maxlength="100">
+          
+          <label>メモ</label>
+          <textarea id="memo-text" placeholder="メモを入力（任意）" rows="3"></textarea>
+
+          <label>手書きメモ</label>
+          <button id="open-canvas-btn" class="canvas-toggle-btn">✏️ 手書きメモを追加</button>
+          <div id="canvas-status" class="canvas-status hidden">✅ 手書きメモが保存されています <span id="delete-handwriting" class="delete-link">削除</span></div>
+          
+          <div class="form-actions">
+            <button id="cancel-memo" class="btn-secondary">キャンセル</button>
+            <button id="save-memo" class="btn-primary">保存する</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 手書きキャンバス画面 (モーダル) -->
+    <div id="canvas-modal" class="modal hidden">
+      <div class="modal-content canvas-modal-content">
+        <div class="modal-header">
+          <button id="back-from-canvas" class="back-btn">← 戻る</button>
+          <h2>手書きメモ</h2>
+          <div style="width:60px"></div>
+        </div>
+        <div class="canvas-toolbar">
+          <div class="color-picker" id="color-picker"></div>
+          <div class="width-picker" id="width-picker"></div>
+          <div class="canvas-actions">
+            <button id="undo-btn" class="tool-btn">↩ 戻す</button>
+            <button id="clear-btn" class="tool-btn">🗑 クリア</button>
+            <button id="save-canvas-btn" class="tool-btn save-tool-btn">💾 保存</button>
+          </div>
+        </div>
+        <canvas id="drawing-canvas"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // Service Worker登録（オフライン対応）
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>

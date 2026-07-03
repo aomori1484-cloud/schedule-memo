@@ -1,0 +1,821 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+  background: #f5f5f5;
+  color: #333;
+  min-height: 100vh;
+}
+
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+  background: #fff;
+  min-height: 100vh;
+  box-shadow: 0 0 20px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+/* タブナビゲーション */
+.tab-nav {
+  display: flex;
+  border-bottom: 2px solid #e0e0e0;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  background: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: #999;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  color: #2196F3;
+  border-bottom: 3px solid #2196F3;
+}
+
+.tab-btn:hover {
+  background: #f8f8f8;
+}
+
+/* ビュー切り替え */
+.view {
+  display: none;
+}
+
+.view.active {
+  display: block;
+}
+
+/* 月ヘッダー */
+.month-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #f8f8f8;
+}
+
+.month-header h2 {
+  font-size: 20px;
+  color: #333;
+  cursor: pointer;
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #2196F3;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.nav-btn:hover {
+  background: #e3f2fd;
+}
+
+/* 曜日行 */
+.weekday-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid #e0e0e0;
+  padding: 8px 4px;
+}
+
+.weekday {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+}
+
+.weekday.sun { color: #E53935; }
+.weekday.sat { color: #1E88E5; }
+
+/* カレンダーグリッド */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  padding: 4px;
+}
+
+.day-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  position: relative;
+  padding: 4px;
+}
+
+.day-cell:hover {
+  background: #f0f0f0;
+}
+
+.day-cell.today {
+  background: #e3f2fd;
+}
+
+.day-cell .day-number {
+  font-size: 15px;
+  color: #333;
+}
+
+.day-cell.today .day-number {
+  font-weight: bold;
+  color: #1565C0;
+}
+
+.day-cell.sun .day-number { color: #E53935; }
+.day-cell.sat .day-number { color: #1E88E5; }
+
+.day-cell .badge {
+  background: #FF5722;
+  color: #fff;
+  font-size: 10px;
+  font-weight: bold;
+  border-radius: 8px;
+  padding: 1px 5px;
+  margin-top: 2px;
+  min-width: 16px;
+  text-align: center;
+}
+
+/* モーダル */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.modal-header h2 {
+  font-size: 18px;
+  color: #333;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #999;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.close-btn:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  font-size: 15px;
+  color: #2196F3;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* スケジュールリスト */
+.schedule-list {
+  padding: 12px;
+  min-height: 100px;
+}
+
+.schedule-item {
+  display: flex;
+  align-items: center;
+  background: #fafafa;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.schedule-item:hover {
+  background: #f0f0f0;
+}
+
+.schedule-item-content {
+  flex: 1;
+}
+
+.schedule-item-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.schedule-item-memo {
+  font-size: 13px;
+  color: #777;
+  margin-bottom: 4px;
+}
+
+.handwriting-badge {
+  display: inline-block;
+  background: #FFF3E0;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: #E65100;
+  margin-top: 4px;
+}
+
+.schedule-item-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #999;
+}
+
+.delete-btn:hover {
+  background: #ffebee;
+  color: #e53935;
+}
+
+.empty-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.empty-message p:first-child {
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+
+.empty-message p:last-child {
+  font-size: 13px;
+  color: #bbb;
+}
+
+.add-btn {
+  display: block;
+  width: calc(100% - 24px);
+  margin: 12px;
+  padding: 14px;
+  background: #2196F3;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.add-btn:hover {
+  background: #1976D2;
+}
+
+/* メモフォーム */
+.memo-form {
+  padding: 20px;
+}
+
+.memo-form label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 8px;
+  margin-top: 16px;
+}
+
+.memo-form label:first-child {
+  margin-top: 0;
+}
+
+.required {
+  color: #e53935;
+}
+
+.memo-form input[type="text"],
+.memo-form textarea {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 15px;
+  background: #fafafa;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.memo-form input[type="text"]:focus,
+.memo-form textarea:focus {
+  outline: none;
+  border-color: #2196F3;
+  background: #fff;
+}
+
+.canvas-toggle-btn {
+  width: 100%;
+  padding: 14px;
+  background: #FFF3E0;
+  border: 1px solid #FFB74D;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #E65100;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.canvas-toggle-btn:hover {
+  background: #FFE0B2;
+}
+
+.canvas-status {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #4CAF50;
+}
+
+.canvas-status.hidden {
+  display: none;
+}
+
+.delete-link {
+  color: #F44336;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 8px;
+}
+
+.delete-link:hover {
+  text-decoration: underline;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btn-secondary {
+  flex: 1;
+  padding: 14px;
+  border-radius: 10px;
+  background: #f5f5f5;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: #e0e0e0;
+}
+
+.btn-primary {
+  flex: 2;
+  padding: 14px;
+  border-radius: 10px;
+  background: #2196F3;
+  border: none;
+  font-size: 15px;
+  font-weight: bold;
+  color: #fff;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: #1976D2;
+}
+
+/* キャンバス */
+.canvas-modal-content {
+  max-width: 600px;
+  width: 95%;
+}
+
+.canvas-toolbar {
+  padding: 10px 16px;
+  background: #f8f8f8;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.color-picker {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.color-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid #ddd;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.color-btn.active {
+  border-color: #333;
+  border-width: 3px;
+  transform: scale(1.15);
+}
+
+.width-picker {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.width-btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+}
+
+.width-btn.active {
+  background: #e3f2fd;
+  border-color: #2196F3;
+}
+
+.width-indicator {
+  border-radius: 4px;
+  width: 20px;
+}
+
+.canvas-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.tool-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  color: #333;
+}
+
+.tool-btn:hover {
+  background: #f0f0f0;
+}
+
+.save-tool-btn {
+  background: #4CAF50;
+  border-color: #4CAF50;
+  color: #fff;
+  font-weight: bold;
+}
+
+.save-tool-btn:hover {
+  background: #388E3C;
+}
+
+#drawing-canvas {
+  display: block;
+  width: 100%;
+  height: 400px;
+  background: #fff;
+  cursor: crosshair;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+
+/* 今日ビュー */
+#today-view .today-header {
+  padding: 16px 20px;
+  background: #E8F5E9;
+  border-bottom: 1px solid #C8E6C9;
+}
+
+#today-view .today-header h2 {
+  font-size: 18px;
+  color: #2E7D32;
+}
+
+#today-view .schedule-list {
+  padding: 12px;
+}
+
+#today-view .add-btn {
+  background: #4CAF50;
+}
+
+#today-view .add-btn:hover {
+  background: #388E3C;
+}
+
+/* 年月ピッカー */
+.year-month-picker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #fafafa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.picker-select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.picker-select:focus {
+  outline: none;
+  border-color: #2196F3;
+}
+
+.jump-btn {
+  padding: 8px 14px;
+  background: #2196F3;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.jump-btn:hover {
+  background: #1976D2;
+}
+
+.today-jump-btn {
+  padding: 8px 14px;
+  background: #fff;
+  color: #2196F3;
+  border: 1px solid #2196F3;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.today-jump-btn:hover {
+  background: #e3f2fd;
+}
+
+/* 手書き専用タブ */
+.handwriting-view-header {
+  padding: 16px 20px;
+  background: #FFF3E0;
+  border-bottom: 1px solid #FFE0B2;
+}
+
+.handwriting-view-header h2 {
+  font-size: 18px;
+  color: #E65100;
+  margin-bottom: 4px;
+}
+
+.handwriting-view-header p {
+  font-size: 13px;
+  color: #BF360C;
+}
+
+.handwriting-canvas-area {
+  border-bottom: 1px solid #e0e0e0;
+}
+
+#hw-drawing-canvas {
+  display: block;
+  width: 100%;
+  height: 350px;
+  background: #fff;
+  cursor: crosshair;
+}
+
+.hw-saved-list {
+  padding: 12px 16px;
+}
+
+.hw-list-title {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.hw-saved-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #fafafa;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.hw-saved-num {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+}
+
+.hw-delete-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #999;
+}
+
+.hw-delete-btn:hover {
+  background: #ffebee;
+  color: #e53935;
+}
+
+.hw-empty {
+  text-align: center;
+  padding: 20px;
+  color: #999;
+  font-size: 14px;
+}
+
+/* 手書きタブの日付ピッカー */
+.hw-date-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.hw-date-picker label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+}
+
+.hw-date-picker input[type="date"] {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 15px;
+  background: #fafafa;
+  cursor: pointer;
+}
+
+.hw-date-picker input[type="date"]:focus {
+  outline: none;
+  border-color: #FF9800;
+}
+
+/* タイムスケジュール選択 */
+.time-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-select {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #fafafa;
+  cursor: pointer;
+}
+
+.time-select:focus {
+  outline: none;
+  border-color: #2196F3;
+  background: #fff;
+}
+
+.time-separator {
+  font-size: 16px;
+  color: #666;
+  font-weight: 600;
+}
+
+.schedule-item-time {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2196F3;
+  margin-bottom: 2px;
+  background: #E3F2FD;
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* 手書きメモサムネイル */
+.hw-thumbnails {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.hw-thumb-title {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.hw-thumb-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hw-thumb-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hw-thumb-canvas {
+  width: 150px;
+  height: 100px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.hw-thumb-label {
+  font-size: 11px;
+  color: #999;
+  margin-top: 4px;
+}
