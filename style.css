@@ -819,3 +819,169 @@ body {
   color: #999;
   margin-top: 4px;
 }
+
+/* 祝日 */
+.day-cell.holiday {
+  background: #FFF0F0;
+}
+
+.day-cell.holiday .day-number {
+  color: #E53935;
+  font-weight: bold;
+}
+
+.holiday-name {
+  font-size: 8px;
+  color: #E53935;
+  display: block;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* バックアップ画面 */
+.backup-header {
+  padding: 16px 20px;
+  background: #E8EAF6;
+  border-bottom: 1px solid #C5CAE9;
+}
+
+.backup-header h2 {
+  font-size: 18px;
+  color: #283593;
+  margin-bottom: 4px;
+}
+
+.backup-header p {
+  font-size: 13px;
+  color: #3949AB;
+}
+
+.backup-section {
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.backup-section h3 {
+  font-size: 15px;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.backup-desc {
+  font-size: 13px;
+  color: #777;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.backup-info {
+  font-size: 13px;
+  color: #555;
+  background: #f5f5f5;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.backup-btn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.export-btn {
+  background: #2196F3;
+  color: #fff;
+}
+
+.export-btn:hover {
+  background: #1976D2;
+}
+
+.import-btn {
+  background: #4CAF50;
+  color: #fff;
+  cursor: pointer;
+}
+
+.import-btn:hover {
+  background: #388E3C;
+}
+
+.import-file-input {
+  display: none;
+}
+
+.import-preview {
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 12px 0;
+  font-size: 13px;
+  color: #555;
+}
+
+.import-preview.hidden {
+  display: none;
+}
+
+.import-preview p {
+  margin-bottom: 4px;
+}
+
+.import-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.import-actions.hidden {
+  display: none;
+}
+
+.import-replace-btn {
+  flex: 1;
+  background: #FF9800;
+  color: #fff;
+}
+
+.import-replace-btn:hover {
+  background: #F57C00;
+}
+
+.import-merge-btn {
+  flex: 1;
+  background: #4CAF50;
+  color: #fff;
+}
+
+.import-merge-btn:hover {
+  background: #388E3C;
+}
+
+.delete-all-btn {
+  background: #fff;
+  color: #E53935;
+  border: 2px solid #E53935 !important;
+}
+
+.delete-all-btn:hover {
+  background: #FFEBEE;
+}
+
+/* 設定タブを小さく */
+.tab-btn-small {
+  flex: 0.4;
+  font-size: 16px;
+  padding: 14px 8px;
+}

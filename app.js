@@ -2,6 +2,110 @@
 // スケジュールメモ アプリ
 // ==========================================
 
+// --- 日本の祝日 ---
+const Holidays = {
+  // 固定祝日 (月-日: 名前)
+  fixed: {
+    '01-01': '元日',
+    '02-11': '建国記念の日',
+    '02-23': '天皇誕生日',
+    '04-29': '昭和の日',
+    '05-03': '憲法記念日',
+    '05-04': 'みどりの日',
+    '05-05': 'こどもの日',
+    '08-11': '山の日',
+    '11-03': '文化の日',
+    '11-23': '勤労感謝の日',
+  },
+
+  // ハッピーマンデー (月: [第何週, 名前])
+  happyMonday: {
+    1: [2, '成人の日'],      // 1月第2月曜
+    7: [3, '海の日'],        // 7月第3月曜
+    9: [3, '敬老の日'],      // 9月第3月曜
+    10: [2, 'スポーツの日'], // 10月第2月曜
+  },
+
+  // 第n月曜日の日付を計算
+  getNthMonday(year, month, n) {
+    let count = 0;
+    for (let day = 1; day <= 31; day++) {
+      const date = new Date(year, month - 1, day);
+      if (date.getMonth() !== month - 1) break;
+      if (date.getDay() === 1) { // 月曜
+        count++;
+        if (count === n) return day;
+      }
+    }
+    return null;
+  },
+
+  // 春分の日を計算（簡易式）
+  getVernalEquinox(year) {
+    return Math.floor(20.8431 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
+  },
+
+  // 秋分の日を計算（簡易式）
+  getAutumnalEquinox(year) {
+    return Math.floor(23.2488 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
+  },
+
+  // 指定年月の祝日マップを取得 {日: 祝日名}
+  getHolidaysForMonth(year, month) {
+    const holidays = {};
+
+    // 固定祝日
+    const monthStr = String(month).padStart(2, '0');
+    Object.entries(this.fixed).forEach(([key, name]) => {
+      if (key.startsWith(monthStr + '-')) {
+        const day = parseInt(key.split('-')[1]);
+        holidays[day] = name;
+      }
+    });
+
+    // ハッピーマンデー
+    if (this.happyMonday[month]) {
+      const [nth, name] = this.happyMonday[month];
+      const day = this.getNthMonday(year, month, nth);
+      if (day) holidays[day] = name;
+    }
+
+    // 春分の日（3月）
+    if (month === 3) {
+      const day = this.getVernalEquinox(year);
+      holidays[day] = '春分の日';
+    }
+
+    // 秋分の日（9月）
+    if (month === 9) {
+      const day = this.getAutumnalEquinox(year);
+      holidays[day] = '秋分の日';
+    }
+
+    // 振替休日: 祝日が日曜の場合、翌月曜が振替休日
+    Object.keys(holidays).forEach(dayStr => {
+      const day = parseInt(dayStr);
+      const date = new Date(year, month - 1, day);
+      if (date.getDay() === 0) { // 日曜
+        let substituteDay = day + 1;
+        // 翌日も祝日なら更にその翌日
+        while (holidays[substituteDay]) {
+          substituteDay++;
+        }
+        holidays[substituteDay] = '振替休日';
+      }
+    });
+
+    return holidays;
+  },
+
+  // 特定の日が祝日かチェック
+  isHoliday(year, month, day) {
+    const holidays = this.getHolidaysForMonth(year, month);
+    return holidays[day] || null;
+  }
+};
+
 // --- データ管理 ---
 const Storage = {
   KEY: 'schedule-memo-data',
@@ -120,6 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initMemoModal();
   initCanvas();
   initHandwritingTab();
+  initBackup();
   renderCalendar();
   renderTodayView();
 });
@@ -209,6 +314,7 @@ function renderCalendar() {
   const days = DateUtil.getCalendarDays(currentYear, currentMonth);
   const schedules = Storage.getByMonth(currentYear, currentMonth);
   const todayStr = DateUtil.today();
+  const holidays = Holidays.getHolidaysForMonth(currentYear, currentMonth);
 
   days.forEach((day, index) => {
     const cell = document.createElement('div');
@@ -222,13 +328,16 @@ function renderCalendar() {
     const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const dayOfWeek = index % 7;
     const count = schedules.filter(s => s.date === dateStr).length;
+    const holidayName = holidays[day];
 
     if (dateStr === todayStr) cell.classList.add('today');
     if (dayOfWeek === 0) cell.classList.add('sun');
     if (dayOfWeek === 6) cell.classList.add('sat');
+    if (holidayName) cell.classList.add('holiday');
 
     cell.innerHTML = `
       <span class="day-number">${day}</span>
+      ${holidayName ? `<span class="holiday-name">${holidayName}</span>` : ''}
       ${count > 0 ? `<span class="badge">${count}</span>` : ''}
     `;
 
@@ -856,4 +965,133 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+// --- バックアップ・復元 ---
+function initBackup() {
+  document.getElementById('export-btn').addEventListener('click', exportData);
+  document.getElementById('import-file').addEventListener('change', handleImportFile);
+  document.getElementById('import-replace-btn').addEventListener('click', () => importData('replace'));
+  document.getElementById('import-merge-btn').addEventListener('click', () => importData('merge'));
+  document.getElementById('delete-all-btn').addEventListener('click', deleteAllData);
+  updateBackupInfo();
+}
+
+function updateBackupInfo() {
+  const all = Storage.getAll();
+  const info = document.getElementById('backup-info');
+  if (all.length === 0) {
+    info.textContent = '保存されているデータ: 0件';
+  } else {
+    const dates = [...new Set(all.map(s => s.date))];
+    info.textContent = `保存されているデータ: ${all.length}件（${dates.length}日分）`;
+  }
+}
+
+function exportData() {
+  const all = Storage.getAll();
+  if (all.length === 0) {
+    alert('エクスポートするデータがありません');
+    return;
+  }
+
+  const exportObj = {
+    appName: 'schedule-memo',
+    version: '1.0',
+    exportDate: new Date().toISOString(),
+    dataCount: all.length,
+    data: all
+  };
+
+  const json = JSON.stringify(exportObj, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const today = DateUtil.today();
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `schedule-memo-backup-${today}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  alert(`${all.length}件のデータをエクスポートしました`);
+}
+
+let importedData = null;
+
+function handleImportFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    try {
+      const obj = JSON.parse(event.target.result);
+
+      if (!obj.data || !Array.isArray(obj.data)) {
+        alert('無効なバックアップファイルです');
+        return;
+      }
+
+      importedData = obj.data;
+
+      const preview = document.getElementById('import-preview');
+      const dates = [...new Set(importedData.map(s => s.date))];
+      preview.innerHTML = `
+        <p>📄 <strong>${file.name}</strong></p>
+        <p>データ件数: ${importedData.length}件（${dates.length}日分）</p>
+        <p>エクスポート日: ${obj.exportDate ? new Date(obj.exportDate).toLocaleString('ja-JP') : '不明'}</p>
+      `;
+      preview.classList.remove('hidden');
+      document.getElementById('import-actions').classList.remove('hidden');
+    } catch (err) {
+      alert('ファイルの読み込みに失敗しました。正しいバックアップファイルを選択してください。');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function importData(mode) {
+  if (!importedData) return;
+
+  if (mode === 'replace') {
+    if (!confirm('現在のデータを全て削除して、バックアップデータで置き換えます。よろしいですか？')) return;
+    localStorage.setItem(Storage.KEY, JSON.stringify(importedData));
+    alert(`${importedData.length}件のデータを復元しました（置き換え）`);
+  } else {
+    const existing = Storage.getAll();
+    const existingIds = new Set(existing.map(s => s.id));
+    const newItems = importedData.filter(s => !existingIds.has(s.id));
+    const merged = [...existing, ...newItems];
+    localStorage.setItem(Storage.KEY, JSON.stringify(merged));
+    alert(`${newItems.length}件の新しいデータを追加しました（既存${existing.length}件 + 新規${newItems.length}件 = 合計${merged.length}件）`);
+  }
+
+  // UIリセット
+  importedData = null;
+  document.getElementById('import-file').value = '';
+  document.getElementById('import-preview').classList.add('hidden');
+  document.getElementById('import-actions').classList.add('hidden');
+  updateBackupInfo();
+  renderCalendar();
+  renderTodayView();
+}
+
+function deleteAllData() {
+  const all = Storage.getAll();
+  if (all.length === 0) {
+    alert('削除するデータがありません');
+    return;
+  }
+
+  if (!confirm(`全${all.length}件のデータを削除します。この操作は取り消せません。本当に削除しますか？`)) return;
+  if (!confirm('本当に削除してよろしいですか？（最終確認）')) return;
+
+  localStorage.removeItem(Storage.KEY);
+  updateBackupInfo();
+  renderCalendar();
+  renderTodayView();
+  alert('全データを削除しました');
 }

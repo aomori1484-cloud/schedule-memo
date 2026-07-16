@@ -16,6 +16,7 @@
       <button class="tab-btn active" data-tab="calendar">📅 カレンダー</button>
       <button class="tab-btn" data-tab="today">📝 今日</button>
       <button class="tab-btn" data-tab="handwriting">✏️ 手書き</button>
+      <button class="tab-btn tab-btn-small" data-tab="backup">⚙️</button>
     </nav>
 
     <!-- カレンダー画面 -->
@@ -153,6 +154,36 @@
           </div>
         </div>
         <canvas id="drawing-canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- バックアップ・設定画面 -->
+    <div id="backup-view" class="view">
+      <div class="backup-header">
+        <h2>💾 バックアップ・復元</h2>
+        <p>スマホ買い替え時にデータを移行できます</p>
+      </div>
+      <div class="backup-section">
+        <h3>📤 データのエクスポート（バックアップ）</h3>
+        <p class="backup-desc">現在のデータをファイルとしてダウンロードします。新しいスマホに移行する前にバックアップしてください。</p>
+        <div id="backup-info" class="backup-info"></div>
+        <button id="export-btn" class="backup-btn export-btn">📥 バックアップファイルをダウンロード</button>
+      </div>
+      <div class="backup-section">
+        <h3>📥 データのインポート（復元）</h3>
+        <p class="backup-desc">バックアップファイルからデータを復元します。現在のデータに追加するか、置き換えるか選べます。</p>
+        <input type="file" id="import-file" accept=".json" class="import-file-input">
+        <label for="import-file" class="backup-btn import-btn">📂 バックアップファイルを選択</label>
+        <div id="import-preview" class="import-preview hidden"></div>
+        <div id="import-actions" class="import-actions hidden">
+          <button id="import-replace-btn" class="backup-btn import-replace-btn">🔄 全て置き換え</button>
+          <button id="import-merge-btn" class="backup-btn import-merge-btn">➕ 既存データに追加</button>
+        </div>
+      </div>
+      <div class="backup-section">
+        <h3>⚠️ データ削除</h3>
+        <p class="backup-desc">全てのデータを削除します。この操作は取り消せません。</p>
+        <button id="delete-all-btn" class="backup-btn delete-all-btn">🗑 全データを削除</button>
       </div>
     </div>
   </div>
