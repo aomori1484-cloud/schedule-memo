@@ -1,4 +1,4 @@
-const CACHE_NAME = 'schedule-memo-v1';
+const CACHE_NAME = 'schedule-memo-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -29,21 +29,36 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// ネットワーク優先、失敗時はキャッシュから返す
+// キャッシュ優先、なければネットワーク
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // 成功したらキャッシュを更新
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, clone);
-        });
+    caches.match(event.request).then((cached) => {
+      if (cached) {
+        // キャッシュがあればすぐ返す（バックグラウンドで更新）
+        fetch(event.request).then((response) => {
+          if (response && response.status === 200) {
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, response);
+            });
+          }
+        }).catch(() => {});
+        return cached;
+      }
+      // キャッシュがなければネットワークから取得してキャッシュ
+      return fetch(event.request).then((response) => {
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, clone);
+          });
+        }
         return response;
-      })
-      .catch(() => {
-        // オフライン時はキャッシュから返す
-        return caches.match(event.request);
-      })
+      }).catch(() => {
+        // オフラインでキャッシュもない場合
+        return new Response('オフラインです。一度ネット接続時にアプリを開いてください。', {
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        });
+      });
+    })
   );
 });
