@@ -969,17 +969,24 @@ function escapeHtml(text) {
 
 // --- バックアップ・復元 ---
 function initBackup() {
-  document.getElementById('export-btn').addEventListener('click', exportData);
-  document.getElementById('import-file').addEventListener('change', handleImportFile);
-  document.getElementById('import-replace-btn').addEventListener('click', () => importData('replace'));
-  document.getElementById('import-merge-btn').addEventListener('click', () => importData('merge'));
-  document.getElementById('delete-all-btn').addEventListener('click', deleteAllData);
+  const exportBtn = document.getElementById('export-btn');
+  const importFile = document.getElementById('import-file');
+  const importReplaceBtn = document.getElementById('import-replace-btn');
+  const importMergeBtn = document.getElementById('import-merge-btn');
+  const deleteAllBtn = document.getElementById('delete-all-btn');
+  
+  if (exportBtn) exportBtn.addEventListener('click', exportData);
+  if (importFile) importFile.addEventListener('change', handleImportFile);
+  if (importReplaceBtn) importReplaceBtn.addEventListener('click', () => importData('replace'));
+  if (importMergeBtn) importMergeBtn.addEventListener('click', () => importData('merge'));
+  if (deleteAllBtn) deleteAllBtn.addEventListener('click', deleteAllData);
   updateBackupInfo();
 }
 
 function updateBackupInfo() {
   const all = Storage.getAll();
   const info = document.getElementById('backup-info');
+  if (!info) return;
   if (all.length === 0) {
     info.textContent = '保存されているデータ: 0件';
   } else {
