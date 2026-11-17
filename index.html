@@ -164,7 +164,21 @@
         <p>スマホ買い替え時にデータを移行できます</p>
       </div>
       <div class="backup-section">
-        <h3>📤 データのエクスポート（バックアップ）</h3>
+        <h3>� Googleカレンダーに書き出す</h3>
+        <p class="backup-desc">予定データをiCalendar形式（.ics）でダウンロードします。Googleカレンダーの「インポート」機能で読み込めます。手書きメモのみの予定は除外されます。</p>
+        <div class="ical-range">
+          <label>書き出す期間：</label>
+          <div class="ical-range-row">
+            <input type="month" id="ical-from" class="ical-month-input">
+            <span>〜</span>
+            <input type="month" id="ical-to" class="ical-month-input">
+          </div>
+          <button id="ical-all-btn" class="ical-all-btn">全期間を選択</button>
+        </div>
+        <button id="export-ical-btn" class="backup-btn ical-btn">📅 Googleカレンダー用ファイルをダウンロード</button>
+      </div>
+      <div class="backup-section">
+        <h3>�📤 データのエクスポート（バックアップ）</h3>
         <p class="backup-desc">現在のデータをファイルとしてダウンロードします。新しいスマホに移行する前にバックアップしてください。</p>
         <div id="backup-info" class="backup-info"></div>
         <button id="export-btn" class="backup-btn export-btn">📥 バックアップファイルをダウンロード</button>

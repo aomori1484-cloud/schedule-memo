@@ -974,13 +974,139 @@ function initBackup() {
   const importReplaceBtn = document.getElementById('import-replace-btn');
   const importMergeBtn = document.getElementById('import-merge-btn');
   const deleteAllBtn = document.getElementById('delete-all-btn');
-  
+  const exportIcalBtn = document.getElementById('export-ical-btn');
+  const icalAllBtn = document.getElementById('ical-all-btn');
+
   if (exportBtn) exportBtn.addEventListener('click', exportData);
   if (importFile) importFile.addEventListener('change', handleImportFile);
   if (importReplaceBtn) importReplaceBtn.addEventListener('click', () => importData('replace'));
   if (importMergeBtn) importMergeBtn.addEventListener('click', () => importData('merge'));
   if (deleteAllBtn) deleteAllBtn.addEventListener('click', deleteAllData);
+  if (exportIcalBtn) exportIcalBtn.addEventListener('click', exportIcal);
+  if (icalAllBtn) icalAllBtn.addEventListener('click', setIcalAllRange);
+
+  // 期間の初期値を設定（今月）
+  const now = new Date();
+  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const fromInput = document.getElementById('ical-from');
+  const toInput = document.getElementById('ical-to');
+  if (fromInput) fromInput.value = thisMonth;
+  if (toInput) toInput.value = thisMonth;
+
   updateBackupInfo();
+}
+
+function setIcalAllRange() {
+  const all = Storage.getAll();
+  if (all.length === 0) {
+    alert('データがありません');
+    return;
+  }
+  const dates = all.map(s => s.date).sort();
+  const from = dates[0].slice(0, 7);
+  const to = dates[dates.length - 1].slice(0, 7);
+  document.getElementById('ical-from').value = from;
+  document.getElementById('ical-to').value = to;
+}
+
+function exportIcal() {
+  const fromVal = document.getElementById('ical-from').value;
+  const toVal = document.getElementById('ical-to').value;
+
+  if (!fromVal || !toVal) {
+    alert('期間を選択してください');
+    return;
+  }
+  if (fromVal > toVal) {
+    alert('開始月は終了月より前に設定してください');
+    return;
+  }
+
+  const all = Storage.getAll();
+  // 手書きのみ（タイトルが数字のみ）は除外、期間フィルタ
+  const filtered = all.filter(s => {
+    const month = s.date.slice(0, 7);
+    return month >= fromVal && month <= toVal && !/^\d+$/.test(s.title);
+  });
+
+  if (filtered.length === 0) {
+    alert('指定した期間に書き出せる予定がありません');
+    return;
+  }
+
+  const ical = buildIcal(filtered);
+  const blob = new Blob([ical], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `schedule-memo-${fromVal}-${toVal}.ics`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  alert(`${filtered.length}件の予定をGoogleカレンダー用ファイルとして書き出しました`);
+}
+
+function buildIcal(schedules) {
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//スケジュールメモ//JP',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+  ];
+
+  schedules.forEach(s => {
+    const dateStr = s.date.replace(/-/g, '');
+    const uid = `${s.id}@schedule-memo`;
+    const summary = icalEscape(s.title);
+    const description = icalEscape(s.memo || '');
+    const created = s.createdAt ? s.createdAt.replace(/[-:]/g, '').replace('.000Z', 'Z').slice(0, 16) + '00Z' : '';
+
+    lines.push('BEGIN:VEVENT');
+    lines.push(`UID:${uid}`);
+
+    if (s.timeStart) {
+      // 時間指定あり
+      const startDt = `${dateStr}T${s.timeStart.replace(':', '')}00`;
+      const endTime = s.timeEnd || addMinutes(s.timeStart, 30);
+      const endDt = `${dateStr}T${endTime.replace(':', '')}00`;
+      lines.push(`DTSTART;TZID=Asia/Tokyo:${startDt}`);
+      lines.push(`DTEND;TZID=Asia/Tokyo:${endDt}`);
+    } else {
+      // 終日
+      const nextDate = getNextDate(s.date).replace(/-/g, '');
+      lines.push(`DTSTART;VALUE=DATE:${dateStr}`);
+      lines.push(`DTEND;VALUE=DATE:${nextDate}`);
+    }
+
+    lines.push(`SUMMARY:${summary}`);
+    if (description) lines.push(`DESCRIPTION:${description}`);
+    if (created) lines.push(`DTSTAMP:${created}`);
+    lines.push('END:VEVENT');
+  });
+
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+
+function icalEscape(str) {
+  return (str || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+}
+
+function addMinutes(timeStr, minutes) {
+  const [h, m] = timeStr.split(':').map(Number);
+  const total = h * 60 + m + minutes;
+  const nh = Math.floor(total / 60) % 24;
+  const nm = total % 60;
+  return `${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`;
+}
+
+function getNextDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + 1);
+  return DateUtil.format(d);
 }
 
 function updateBackupInfo() {
