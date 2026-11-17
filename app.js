@@ -985,6 +985,27 @@ function initBackup() {
   if (exportIcalBtn) exportIcalBtn.addEventListener('click', exportIcal);
   if (icalAllBtn) icalAllBtn.addEventListener('click', setIcalAllRange);
 
+  // モード切り替え（月単位 / 日付単位）
+  document.querySelectorAll('.ical-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.ical-mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const mode = btn.dataset.mode;
+      document.getElementById('ical-month-range').classList.toggle('hidden', mode !== 'month');
+      document.getElementById('ical-date-range').classList.toggle('hidden', mode !== 'date');
+    });
+  });
+
+  // 今日だけボタン
+  const icalTodayBtn = document.getElementById('ical-today-btn');
+  if (icalTodayBtn) {
+    icalTodayBtn.addEventListener('click', () => {
+      const today = DateUtil.today();
+      document.getElementById('ical-from-date').value = today;
+      document.getElementById('ical-to-date').value = today;
+    });
+  }
+
   // 期間の初期値を設定（今月）
   const now = new Date();
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -1010,23 +1031,35 @@ function setIcalAllRange() {
 }
 
 function exportIcal() {
-  const fromVal = document.getElementById('ical-from').value;
-  const toVal = document.getElementById('ical-to').value;
+  // 現在のモードを確認
+  const activeMode = document.querySelector('.ical-mode-btn.active');
+  const mode = activeMode ? activeMode.dataset.mode : 'month';
 
-  if (!fromVal || !toVal) {
-    alert('期間を選択してください');
-    return;
-  }
-  if (fromVal > toVal) {
-    alert('開始月は終了月より前に設定してください');
-    return;
-  }
+  let filtered;
+  let fileName;
 
-  const all = Storage.getAll();
-  const filtered = all.filter(s => {
-    const month = s.date.slice(0, 7);
-    return month >= fromVal && month <= toVal && !/^\d+$/.test(s.title);
-  });
+  if (mode === 'date') {
+    // 日付単位
+    const fromDate = document.getElementById('ical-from-date').value;
+    const toDate = document.getElementById('ical-to-date').value;
+    if (!fromDate || !toDate) { alert('日付を選択してください'); return; }
+    if (fromDate > toDate) { alert('開始日は終了日より前に設定してください'); return; }
+    const all = Storage.getAll();
+    filtered = all.filter(s => s.date >= fromDate && s.date <= toDate && !/^\d+$/.test(s.title));
+    fileName = `schedule-memo-${fromDate}-${toDate}.ics`;
+  } else {
+    // 月単位
+    const fromVal = document.getElementById('ical-from').value;
+    const toVal = document.getElementById('ical-to').value;
+    if (!fromVal || !toVal) { alert('期間を選択してください'); return; }
+    if (fromVal > toVal) { alert('開始月は終了月より前に設定してください'); return; }
+    const all = Storage.getAll();
+    filtered = all.filter(s => {
+      const month = s.date.slice(0, 7);
+      return month >= fromVal && month <= toVal && !/^\d+$/.test(s.title);
+    });
+    fileName = `schedule-memo-${fromVal}-${toVal}.ics`;
+  }
 
   if (filtered.length === 0) {
     alert('指定した期間に書き出せる予定がありません');
@@ -1034,29 +1067,24 @@ function exportIcal() {
   }
 
   const ical = buildIcal(filtered);
-
-  // スマホ対応：data URIで開く
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isAndroid = /Android/.test(navigator.userAgent);
 
   if (isIOS || isAndroid) {
-    // スマホはデータURIで新しいタブに開く
     const encoded = encodeURIComponent(ical);
     const dataUri = 'data:text/calendar;charset=utf-8,' + encoded;
     const win = window.open(dataUri, '_blank');
     if (!win) {
-      // ポップアップブロックされた場合はテキスト表示
       showIcalText(ical, filtered.length);
     } else {
       alert(`${filtered.length}件の予定を開きました。\n\n表示されたページを「ファイルに保存」してGoogleカレンダーにインポートしてください。`);
     }
   } else {
-    // PCはBlobダウンロード
     const blob = new Blob([ical], { type: 'text/calendar;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `schedule-memo-${fromVal}-${toVal}.ics`;
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

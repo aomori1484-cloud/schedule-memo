@@ -1041,3 +1041,28 @@ body {
 .ical-btn:hover {
   background: #2d8f47;
 }
+
+/* iCalモード切り替え */
+.ical-mode-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.ical-mode-btn {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 14px;
+  color: #666;
+  cursor: pointer;
+}
+
+.ical-mode-btn.active {
+  background: #34A853;
+  color: #fff;
+  border-color: #34A853;
+  font-weight: bold;
+}

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -160,48 +160,62 @@
     <!-- バックアップ・設定画面 -->
     <div id="backup-view" class="view">
       <div class="backup-header">
-        <h2>💾 バックアップ・復元</h2>
+        <h2>バックアップ・復元</h2>
         <p>スマホ買い替え時にデータを移行できます</p>
       </div>
       <div class="backup-section">
-        <h3>� Googleカレンダーに書き出す</h3>
-        <p class="backup-desc">予定データをiCalendar形式（.ics）でダウンロードします。Googleカレンダーの「インポート」機能で読み込めます。手書きメモのみの予定は除外されます。</p>
+        <h3>Googleカレンダーに書き出す</h3>
+        <p class="backup-desc">予定データをiCalendar形式（.ics）でダウンロードします。手書きメモのみの予定は除外されます。</p>
         <div class="ical-range">
-          <label>書き出す期間：</label>
-          <div class="ical-range-row">
-            <input type="month" id="ical-from" class="ical-month-input">
-            <span>〜</span>
-            <input type="month" id="ical-to" class="ical-month-input">
+          <div class="ical-mode-row">
+            <button class="ical-mode-btn active" data-mode="month">月単位</button>
+            <button class="ical-mode-btn" data-mode="date">日付単位</button>
           </div>
-          <button id="ical-all-btn" class="ical-all-btn">全期間を選択</button>
+          <div id="ical-month-range">
+            <label>書き出す期間：</label>
+            <div class="ical-range-row">
+              <input type="month" id="ical-from" class="ical-month-input">
+              <span>〜</span>
+              <input type="month" id="ical-to" class="ical-month-input">
+            </div>
+            <button id="ical-all-btn" class="ical-all-btn">全期間を選択</button>
+          </div>
+          <div id="ical-date-range" class="hidden">
+            <label>書き出す日付：</label>
+            <div class="ical-range-row">
+              <input type="date" id="ical-from-date" class="ical-month-input">
+              <span>〜</span>
+              <input type="date" id="ical-to-date" class="ical-month-input">
+            </div>
+            <button id="ical-today-btn" class="ical-all-btn">今日だけ</button>
+          </div>
         </div>
-        <button id="export-ical-btn" class="backup-btn ical-btn">📅 Googleカレンダー用ファイルをダウンロード</button>
+        <button id="export-ical-btn" class="backup-btn ical-btn">Googleカレンダー用ファイルをダウンロード</button>
       </div>
       <div class="backup-section">
-        <h3>�📤 データのエクスポート（バックアップ）</h3>
+        <h3>データのエクスポート（バックアップ）</h3>
         <p class="backup-desc">現在のデータをファイルとしてダウンロードします。新しいスマホに移行する前にバックアップしてください。</p>
         <div id="backup-info" class="backup-info"></div>
-        <button id="export-btn" class="backup-btn export-btn">📥 バックアップファイルをダウンロード</button>
+        <button id="export-btn" class="backup-btn export-btn">バックアップファイルをダウンロード</button>
       </div>
       <div class="backup-section">
-        <h3>📥 データのインポート（復元）</h3>
+        <h3>データのインポート（復元）</h3>
         <p class="backup-desc">バックアップファイルからデータを復元します。現在のデータに追加するか、置き換えるか選べます。</p>
         <input type="file" id="import-file" accept=".json" class="import-file-input">
-        <label for="import-file" class="backup-btn import-btn">📂 バックアップファイルを選択</label>
+        <label for="import-file" class="backup-btn import-btn">バックアップファイルを選択</label>
         <div id="import-preview" class="import-preview hidden"></div>
         <div id="import-actions" class="import-actions hidden">
-          <button id="import-replace-btn" class="backup-btn import-replace-btn">🔄 全て置き換え</button>
-          <button id="import-merge-btn" class="backup-btn import-merge-btn">➕ 既存データに追加</button>
+          <button id="import-replace-btn" class="backup-btn import-replace-btn">全て置き換え</button>
+          <button id="import-merge-btn" class="backup-btn import-merge-btn">既存データに追加</button>
         </div>
       </div>
       <div class="backup-section">
-        <h3>⚠️ データ削除</h3>
+        <h3>データ削除</h3>
         <p class="backup-desc">全てのデータを削除します。この操作は取り消せません。</p>
-        <button id="delete-all-btn" class="backup-btn delete-all-btn">🗑 全データを削除</button>
+        <button id="delete-all-btn" class="backup-btn delete-all-btn">全データを削除</button>
       </div>
     </div>
   </div>
-
   <script src="app.js"></script>
   <script>
     // Service Worker登録（オフライン対応）
