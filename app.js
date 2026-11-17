@@ -1138,38 +1138,100 @@ function buildIcal(schedules) {
     'METHOD:PUBLISH',
   ];
 
+  // 日付ごとにグループ化して、時間なし予定に自動で時間を割り当てる
+  const byDate = {};
   schedules.forEach(s => {
-    const dateStr = s.date.replace(/-/g, '');
-    const uid = `${s.id}@schedule-memo`;
-    const summary = icalEscape(s.title);
-    const description = icalEscape(s.memo || '');
-    const created = s.createdAt ? s.createdAt.replace(/[-:]/g, '').replace('.000Z', 'Z').slice(0, 16) + '00Z' : '';
+    if (!byDate[s.date]) byDate[s.date] = [];
+    byDate[s.date].push(s);
+  });
 
-    lines.push('BEGIN:VEVENT');
-    lines.push(`UID:${uid}`);
+  Object.keys(byDate).forEach(dateStr => {
+    const daySchedules = byDate[dateStr];
 
-    if (s.timeStart) {
-      // 時間指定あり
-      const startDt = `${dateStr}T${s.timeStart.replace(':', '')}00`;
-      const endTime = s.timeEnd || addMinutes(s.timeStart, 30);
-      const endDt = `${dateStr}T${endTime.replace(':', '')}00`;
-      lines.push(`DTSTART;TZID=Asia/Tokyo:${startDt}`);
-      lines.push(`DTEND;TZID=Asia/Tokyo:${endDt}`);
-    } else {
-      // 終日
-      const nextDate = getNextDate(s.date).replace(/-/g, '');
-      lines.push(`DTSTART;VALUE=DATE:${dateStr}`);
-      lines.push(`DTEND;VALUE=DATE:${nextDate}`);
-    }
+    // 時間あり予定の占有スロットを収集（分単位）
+    const usedSlots = [];
+    daySchedules.forEach(s => {
+      if (s.timeStart) {
+        const startMin = timeToMin(s.timeStart);
+        const endMin = s.timeEnd ? timeToMin(s.timeEnd) : startMin + 30;
+        usedSlots.push({ start: startMin, end: endMin });
+      }
+    });
 
-    lines.push(`SUMMARY:${summary}`);
-    if (description) lines.push(`DESCRIPTION:${description}`);
-    if (created) lines.push(`DTSTAMP:${created}`);
-    lines.push('END:VEVENT');
+    // 時間なし予定に9:00以降の空きスロットを順番に割り当て
+    const autoAssigned = {};
+    let searchFrom = 9 * 60; // 9:00から探す
+
+    daySchedules.forEach(s => {
+      if (!s.timeStart) {
+        const slot = findNextFreeSlot(usedSlots, searchFrom, 30);
+        autoAssigned[s.id] = slot;
+        usedSlots.push(slot);
+        usedSlots.sort((a, b) => a.start - b.start);
+        searchFrom = slot.end;
+      }
+    });
+
+    // iCalエントリを生成
+    daySchedules.forEach(s => {
+      const dateFormatted = dateStr.replace(/-/g, '');
+      const uid = `${s.id}@schedule-memo`;
+      const summary = icalEscape(s.title);
+      const description = icalEscape(s.memo || '');
+      const created = s.createdAt ? s.createdAt.replace(/[-:]/g, '').replace('.000Z', 'Z').slice(0, 16) + '00Z' : '';
+
+      lines.push('BEGIN:VEVENT');
+      lines.push(`UID:${uid}`);
+
+      if (s.timeStart) {
+        const startDt = `${dateFormatted}T${s.timeStart.replace(':', '')}00`;
+        const endTime = s.timeEnd || addMinutes(s.timeStart, 30);
+        const endDt = `${dateFormatted}T${endTime.replace(':', '')}00`;
+        lines.push(`DTSTART;TZID=Asia/Tokyo:${startDt}`);
+        lines.push(`DTEND;TZID=Asia/Tokyo:${endDt}`);
+      } else {
+        // 自動割り当て時間を使用
+        const slot = autoAssigned[s.id];
+        const startStr = minToTime(slot.start).replace(':', '') + '00';
+        const endStr = minToTime(slot.end).replace(':', '') + '00';
+        lines.push(`DTSTART;TZID=Asia/Tokyo:${dateFormatted}T${startStr}`);
+        lines.push(`DTEND;TZID=Asia/Tokyo:${dateFormatted}T${endStr}`);
+        lines.push(`DESCRIPTION:※時間は自動割り当て${description ? '\\n' + description : ''}`);
+      }
+
+      lines.push(`SUMMARY:${summary}`);
+      if (s.timeStart && description) lines.push(`DESCRIPTION:${description}`);
+      if (created) lines.push(`DTSTAMP:${created}`);
+      lines.push('END:VEVENT');
+    });
   });
 
   lines.push('END:VCALENDAR');
   return lines.join('\r\n');
+}
+
+// 時刻文字列 "HH:MM" を分に変換
+function timeToMin(timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  return h * 60 + m;
+}
+
+// 分を時刻文字列 "HH:MM" に変換
+function minToTime(min) {
+  const h = Math.floor(min / 60) % 24;
+  const m = min % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+// 空きスロットを探す
+function findNextFreeSlot(usedSlots, fromMin, durationMin) {
+  let start = fromMin;
+  while (true) {
+    const end = start + durationMin;
+    const conflict = usedSlots.find(slot => start < slot.end && end > slot.start);
+    if (!conflict) return { start, end };
+    start = conflict.end; // 衝突したら次のスロットの終了時間から再探索
+  }
 }
 
 function icalEscape(str) {
