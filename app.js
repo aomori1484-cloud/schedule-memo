@@ -1023,7 +1023,6 @@ function exportIcal() {
   }
 
   const all = Storage.getAll();
-  // 手書きのみ（タイトルが数字のみ）は除外、期間フィルタ
   const filtered = all.filter(s => {
     const month = s.date.slice(0, 7);
     return month >= fromVal && month <= toVal && !/^\d+$/.test(s.title);
@@ -1035,17 +1034,71 @@ function exportIcal() {
   }
 
   const ical = buildIcal(filtered);
-  const blob = new Blob([ical], { type: 'text/calendar;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `schedule-memo-${fromVal}-${toVal}.ics`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
 
-  alert(`${filtered.length}件の予定をGoogleカレンダー用ファイルとして書き出しました`);
+  // スマホ対応：data URIで開く
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isAndroid = /Android/.test(navigator.userAgent);
+
+  if (isIOS || isAndroid) {
+    // スマホはデータURIで新しいタブに開く
+    const encoded = encodeURIComponent(ical);
+    const dataUri = 'data:text/calendar;charset=utf-8,' + encoded;
+    const win = window.open(dataUri, '_blank');
+    if (!win) {
+      // ポップアップブロックされた場合はテキスト表示
+      showIcalText(ical, filtered.length);
+    } else {
+      alert(`${filtered.length}件の予定を開きました。\n\n表示されたページを「ファイルに保存」してGoogleカレンダーにインポートしてください。`);
+    }
+  } else {
+    // PCはBlobダウンロード
+    const blob = new Blob([ical], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `schedule-memo-${fromVal}-${toVal}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    alert(`${filtered.length}件の予定をGoogleカレンダー用ファイルとして書き出しました`);
+  }
+}
+
+function showIcalText(ical, count) {
+  // モーダルでテキストを表示してコピーできるようにする
+  const existing = document.getElementById('ical-text-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'ical-text-modal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:999;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:12px;padding:20px;width:90%;max-width:460px;max-height:80vh;overflow:auto;">
+      <h3 style="margin-bottom:8px;">📅 iCalendarデータ（${count}件）</h3>
+      <p style="font-size:12px;color:#666;margin-bottom:12px;">下のテキストを全て選択してコピーし、メモアプリ等に貼り付けて <strong>.ics</strong> という名前で保存してください。</p>
+      <textarea id="ical-text-area" style="width:100%;height:200px;font-size:11px;border:1px solid #ddd;border-radius:6px;padding:8px;" readonly>${ical}</textarea>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button id="ical-copy-btn" style="flex:2;padding:12px;background:#34A853;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer;">📋 全てコピー</button>
+        <button id="ical-close-btn" style="flex:1;padding:12px;background:#f5f5f5;border:none;border-radius:8px;font-size:14px;cursor:pointer;">閉じる</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  document.getElementById('ical-copy-btn').addEventListener('click', () => {
+    const textarea = document.getElementById('ical-text-area');
+    textarea.select();
+    navigator.clipboard.writeText(ical).then(() => {
+      alert('コピーしました！');
+    }).catch(() => {
+      textarea.select();
+      document.execCommand('copy');
+      alert('コピーしました！');
+    });
+  });
+
+  document.getElementById('ical-close-btn').addEventListener('click', () => modal.remove());
 }
 
 function buildIcal(schedules) {
